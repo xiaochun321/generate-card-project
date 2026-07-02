@@ -21,6 +21,8 @@ OUTPUT_DIR = ROOT / "output_cards"
 ILLUSTRATION_DIR = OUTPUT_DIR / "illustrations"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 ILLUSTRATION_DIR.mkdir(parents=True, exist_ok=True)
+HOST = os.getenv("HOST", "0.0.0.0")
+PORT = int(os.getenv("PORT", "8000"))
 
 
 def get_font(size: int, bold: bool = False) -> ImageFont.ImageFont:
@@ -275,4 +277,4 @@ def output_file(filename: str):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000, debug=True)
+    app.run(host=HOST, port=PORT, debug=False)

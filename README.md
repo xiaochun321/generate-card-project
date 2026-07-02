@@ -4,7 +4,11 @@
 
 ## 网站入口
 
-本地运行后可通过以下地址访问：
+在当前的 GitHub Codespaces / 预览环境中，可通过端口转发地址访问：
+
+- https://animated-memory-x79x74r647jfp4vj-8000.app.github.dev/
+
+如果你是在本机直接运行，也可以访问：
 
 - http://127.0.0.1:8000/
 
