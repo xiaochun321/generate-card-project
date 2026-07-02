@@ -1,0 +1,4 @@
+interface:
+  display_name: "卡片项目生成"
+  short_description: "按固定底图和PIL排版流程批量生成高一致性图文卡片项目。"
+  default_prompt: "Use $generate-card-project to build a reusable batch card-generation project from my source data and design notes."

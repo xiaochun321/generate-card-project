@@ -1,0 +1,68 @@
+body {
+  margin: 0;
+  font-family: "Microsoft YaHei", Arial, sans-serif;
+  background: linear-gradient(135deg, #fdf7eb, #f7efe3);
+  color: #4a3423;
+}
+.page {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 24px;
+  padding: 24px;
+}
+.panel {
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.08);
+}
+.form-grid {
+  display: grid;
+  gap: 16px;
+}
+label, fieldset {
+  display: grid;
+  gap: 6px;
+}
+input, textarea, button {
+  padding: 10px 12px;
+  border: 1px solid #d8c0a3;
+  border-radius: 10px;
+  font-size: 15px;
+}
+button {
+  background: #7e4b25;
+  color: white;
+  cursor: pointer;
+}
+button:hover {
+  background: #633c1c;
+}
+.message {
+  padding: 10px 12px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+.message.error {
+  background: #fff0ef;
+  color: #a14333;
+}
+.card-image {
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid #e7d8be;
+  margin-top: 8px;
+}
+.placeholder {
+  min-height: 240px;
+  display: grid;
+  place-items: center;
+  color: #9a7e5d;
+  border: 2px dashed #e6d4b5;
+  border-radius: 16px;
+}
+@media (max-width: 900px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+}

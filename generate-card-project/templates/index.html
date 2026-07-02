@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>成语卡片生成器</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body>
+    <main class="page">
+      <section class="panel">
+        <h1>成语解读卡片生成器</h1>
+        <p>填写成语和可选的模型配置后，即可生成一张可发布的成语卡片。</p>
+
+        {% if error %}
+        <div class="message error">{{ error }}</div>
+        {% endif %}
+
+        <form method="post" action="/generate" class="form-grid">
+          <label>
+            成语名称
+            <input name="idiom" placeholder="如：东窗事发" required>
+          </label>
+          <label>
+            拼音（可选）
+            <input name="pinyin" placeholder="如：dōng chuāng shì fā">
+          </label>
+          <label>
+            简单解释（可选）
+            <textarea name="explanation" rows="3"></textarea>
+          </label>
+          <label>
+            故事讲述（可选）
+            <textarea name="story" rows="3"></textarea>
+          </label>
+          <label>
+            家长提示（可选）
+            <textarea name="tip" rows="3"></textarea>
+          </label>
+
+          <fieldset>
+            <legend>正常模型（可选，兼容 OpenAI API）</legend>
+            <label>接口地址<input name="normal_base" placeholder="https://api.openai.com/v1"></label>
+            <label>密钥<input name="normal_key" placeholder="sk-..."></label>
+            <label>模型名<input name="normal_model" value="gpt-4o-mini"></label>
+          </fieldset>
+
+          <fieldset>
+            <legend>生图模型（可选，兼容 OpenAI images API）</legend>
+            <label>接口地址<input name="image_base" placeholder="https://api.openai.com/v1"></label>
+            <label>密钥<input name="image_key" placeholder="sk-..."></label>
+            <label>模型名<input name="image_model" value="gpt-image-1"></label>
+          </fieldset>
+
+          <button type="submit">生成卡片</button>
+        </form>
+      </section>
+
+      <section class="panel preview">
+        {% if result %}
+          <h2>生成结果</h2>
+          <div class="card-meta">
+            <p><strong>成语：</strong>{{ result.card.idiom }}</p>
+            <p><strong>拼音：</strong>{{ result.card.pinyin }}</p>
+            <p><strong>解释：</strong>{{ result.card.explanation }}</p>
+          </div>
+          <img src="{{ result.image_url }}" alt="成语卡片预览" class="card-image">
+          <a href="{{ result.image_url }}" download>下载图片</a>
+        {% else %}
+          <div class="placeholder">在这里预览成语卡片。</div>
+        {% endif %}
+      </section>
+    </main>
+  </body>
+</html>
