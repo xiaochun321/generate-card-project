@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>成语卡片生成器</title>
-<script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.26.0/dist/index.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -56,11 +55,7 @@ fieldset {
   border-radius: 12px;
   padding: 14px;
 }
-fieldset legend {
-  color: #7e4b25;
-  font-weight: 600;
-  padding: 0 6px;
-}
+fieldset legend { color: #7e4b25; font-weight: 600; padding: 0 6px; }
 .message {
   padding: 10px 12px;
   border-radius: 10px;
@@ -80,7 +75,7 @@ fieldset legend {
   image-rendering: auto;
 }
 .card-meta { width: 100%; margin-top: 8px; }
-.card-meta p { margin: 4px 0; line-height: 1.6; }
+.card-meta p { margin: 4px 0; line-height: 1.6; word-break: break-all; }
 .download-btn {
   margin-top: 12px;
   background: #2d7d46;
@@ -116,50 +111,29 @@ fieldset legend {
   <section class="panel">
     <h1>成语解读卡片生成器</h1>
     <p>填写成语和可选的模型配置后，即可生成一张可发布的成语卡片。</p>
-
     <div id="msgBox" class="message"></div>
-
     <form id="cardForm" class="form-grid">
-      <label>
-        成语名称
-        <input name="idiom" id="idiom" placeholder="如：东窗事发" required>
-      </label>
-      <label>
-        拼音（可选，留空自动生成）
-        <input name="pinyin" id="pinyin" placeholder="如：dōng chuāng shì fā">
-      </label>
-      <label>
-        简单解释（可选）
-        <textarea name="explanation" id="explanation" rows="3"></textarea>
-      </label>
-      <label>
-        故事讲述（可选）
-        <textarea name="story" id="story" rows="3"></textarea>
-      </label>
-      <label>
-        家长提示（可选）
-        <textarea name="tip" id="tip" rows="3"></textarea>
-      </label>
-
+      <label>成语名称 <input name="idiom" id="idiom" placeholder="如：东窗事发" required></label>
+      <label>拼音（可选，留空自动生成） <input name="pinyin" id="pinyin" placeholder="如：dōng chuāng shì fā"></label>
+      <label>简单解释（可选） <textarea name="explanation" id="explanation" rows="3"></textarea></label>
+      <label>故事讲述（可选） <textarea name="story" id="story" rows="3"></textarea></label>
+      <label>家长提示（可选） <textarea name="tip" id="tip" rows="3"></textarea></label>
       <fieldset>
         <legend>正常模型（可选，兼容 OpenAI API）</legend>
-        <label>接口地址<input name="normal_base" id="normal_base" placeholder="https://api.openai.com/v1"></label>
-        <label>密钥<input name="normal_key" id="normal_key" type="password" placeholder="sk-..."></label>
-        <label>模型名<input name="normal_model" id="normal_model" value="gpt-4o-mini"></label>
+        <label>接口地址 <input name="normal_base" id="normal_base" placeholder="https://api.openai.com/v1"></label>
+        <label>密钥 <input name="normal_key" id="normal_key" type="password" placeholder="sk-..."></label>
+        <label>模型名 <input name="normal_model" id="normal_model" value="gpt-4o-mini"></label>
       </fieldset>
-
       <fieldset>
         <legend>生图模型（可选，兼容 OpenAI images API）</legend>
-        <label>接口地址<input name="image_base" id="image_base" placeholder="https://api.openai.com/v1"></label>
-        <label>密钥<input name="image_key" id="image_key" type="password" placeholder="sk-..."></label>
-        <label>模型名<input name="image_model" id="image_model" value="gpt-image-1"></label>
+        <label>接口地址 <input name="image_base" id="image_base" placeholder="https://api.openai.com/v1"></label>
+        <label>密钥 <input name="image_key" id="image_key" type="password" placeholder="sk-..."></label>
+        <label>模型名 <input name="image_model" id="image_model" value="gpt-image-1"></label>
       </fieldset>
-
       <button type="submit" id="submitBtn">生成卡片</button>
       <div class="spinner" id="spinner"></div>
     </form>
   </section>
-
   <section class="panel preview" id="previewPanel">
     <h2>生成结果</h2>
     <div id="previewArea" class="placeholder">在这里预览成语卡片。</div>
@@ -168,11 +142,27 @@ fieldset legend {
 
 <script>
 (function() {
+'use strict';
+
+// ── Polyfill: ctx.roundRect for older browsers ──────────────
+function roundRectPath(ctx, x, y, w, h, r) {
+  if (typeof r === 'number') r = { tl: r, tr: r, br: r, bl: r };
+  ctx.beginPath();
+  ctx.moveTo(x + r.tl, y);
+  ctx.lineTo(x + w - r.tr, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r.tr);
+  ctx.lineTo(x + w, y + h - r.br);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r.br, y + h);
+  ctx.lineTo(x + r.bl, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r.bl);
+  ctx.lineTo(x, y + r.tl);
+  ctx.quadraticCurveTo(x, y, x + r.tl, y);
+  ctx.closePath();
+}
 
 // ── Utility ─────────────────────────────────────────────────
 function drawRoundedRect(ctx, x, y, w, h, r, fillColor, strokeColor, lineWidth) {
-  ctx.beginPath();
-  ctx.roundRect(x, y, w, h, r);
+  roundRectPath(ctx, x, y, w, h, r);
   if (fillColor) { ctx.fillStyle = fillColor; ctx.fill(); }
   if (strokeColor) { ctx.strokeStyle = strokeColor; ctx.lineWidth = lineWidth || 1; ctx.stroke(); }
 }
@@ -198,11 +188,11 @@ function wrapText(ctx, text, maxWidth) {
 }
 
 function getPinyin(text) {
-  if (typeof pinyinPro !== 'undefined') {
-    try {
+  try {
+    if (typeof pinyinPro !== 'undefined' && typeof pinyinPro.pinyin === 'function') {
       return pinyinPro.pinyin(text, { toneType: 'symbol', type: 'array' }).join(' ');
-    } catch (e) {}
-  }
+    }
+  } catch (e) { /* fallback to empty */ }
   return '';
 }
 
@@ -225,16 +215,14 @@ function drawPlaceholderIllustration(ctx, x, y, w, h) {
   var innerW = w * 0.92;
   var innerH = h * 0.83;
   drawRoundedRect(ctx, innerX, innerY, innerW, innerH, r * 0.7, '#fff8e9', '#d2b478', 6);
-
   ctx.fillStyle = '#5f4123';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   var titleSize = Math.round(Math.min(w, h) * 0.06);
-  ctx.font = titleSize + 'px "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif';
+  ctx.font = titleSize + 'px "Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif';
   ctx.fillText('成语故事', x + w / 2, y + h * 0.42);
-
   var subSize = Math.round(titleSize * 0.55);
-  ctx.font = subSize + 'px "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif';
+  ctx.font = subSize + 'px "Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif';
   ctx.fillStyle = '#7d5f3c';
   ctx.fillText('AI 生图可替换插图', x + w / 2, y + h * 0.58);
 }
@@ -251,49 +239,45 @@ function renderCard(canvas, scale, data, illustration) {
   var ctx = canvas.getContext('2d');
   ctx.scale(scale, scale);
 
-  // Background
   ctx.fillStyle = '#f8ecd2';
   ctx.fillRect(0, 0, W, H);
 
-  // Borders
   drawRoundedRect(ctx, 40, 40, W - 80, H - 80, 42, null, '#b29266', 7);
   drawRoundedRect(ctx, 60, 60, W - 120, H - 120, 38, null, '#d8bf96', 3);
 
-  // Title (idiom)
   var titleFontSize = Math.round(W * 0.065);
   ctx.fillStyle = '#6c4a27';
-  ctx.font = 'bold ' + titleFontSize + 'px "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif';
+  ctx.font = 'bold ' + titleFontSize + 'px "Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(data.idiom, W / 2, Math.round(H * 0.06));
 
-  // Pinyin
   var pinyin = data.pinyin || '';
   if (pinyin) {
-    var parts = pinyin.split(' ');
+    var parts = pinyin.split(/\s+/);
     var charCount = Math.min(parts.length, 5);
     var cellWidth = Math.round(charCount <= 4 ? W * 0.16 : W * 0.13);
     var startX = Math.round(W * 0.23);
     var pinyinY = Math.round(H * 0.11);
     var pinyinFontSize = Math.round(W * 0.03);
-    ctx.font = pinyinFontSize + 'px "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif';
+    ctx.font = pinyinFontSize + 'px "Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif';
     ctx.fillStyle = '#8c6e5a';
     ctx.textBaseline = 'top';
     for (var i = 0; i < charCount; i++) {
       var cellX = startX + i * cellWidth;
-      var pw = ctx.measureText(parts[i]).width;
+      var pw = ctx.measureText(parts[i] || '').width;
       ctx.textAlign = 'left';
-      ctx.fillText(parts[i], cellX + (cellWidth - pw) / 2, pinyinY);
+      ctx.fillText(parts[i] || '', cellX + (cellWidth - pw) / 2, pinyinY);
     }
   }
 
-  // Illustration
   var illX = Math.round(W * 0.1);
   var illY = Math.round(H * 0.16);
   var illW = Math.round(W * 0.8);
   var illH = Math.round(H * 0.34);
 
-  if (illustration && illustration.complete && illustration.naturalWidth > 0) {
+  var hasImage = illustration && illustration.complete && illustration.naturalWidth > 0;
+  if (hasImage) {
     try {
       var sw = illustration.naturalWidth;
       var sh = illustration.naturalHeight;
@@ -302,15 +286,12 @@ function renderCard(canvas, scale, data, illustration) {
       var dx = illX + (illW - dw) / 2;
       var dy = illY + (illH - dh) / 2;
 
-      // Soft mask via clipping + blur
       ctx.save();
-      ctx.beginPath();
-      ctx.roundRect(illX, illY, illW, illH, 40);
+      roundRectPath(ctx, illX, illY, illW, illH, 40);
       ctx.clip();
       ctx.drawImage(illustration, dx, dy, dw, dh);
       ctx.restore();
 
-      // Subtle border on illustration
       drawRoundedRect(ctx, illX, illY, illW, illH, 40, null, '#d4c0a0', 4);
     } catch (e) {
       drawPlaceholderIllustration(ctx, illX, illY, illW, illH);
@@ -319,7 +300,6 @@ function renderCard(canvas, scale, data, illustration) {
     drawPlaceholderIllustration(ctx, illX, illY, illW, illH);
   }
 
-  // Content sections
   var sections = [
     { label: '简单解释', content: data.explanation || '' },
     { label: '故事讲述', content: data.story || '' },
@@ -335,12 +315,12 @@ function renderCard(canvas, scale, data, illustration) {
 
   for (var si = 0; si < sections.length; si++) {
     ctx.fillStyle = '#845c2c';
-    ctx.font = 'bold ' + labelFontSize + 'px "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif';
+    ctx.font = 'bold ' + labelFontSize + 'px "Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif';
     ctx.fillText(sections[si].label, Math.round(W * 0.10), y);
     y += Math.round(H * 0.04);
 
     ctx.fillStyle = '#503e2a';
-    ctx.font = bodyFontSize + 'px "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif';
+    ctx.font = bodyFontSize + 'px "Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif';
     var lines = wrapText(ctx, sections[si].content, Math.round(W * 0.8));
     for (var li = 0; li < lines.length; li++) {
       if (lines[li]) {
@@ -353,9 +333,8 @@ function renderCard(canvas, scale, data, illustration) {
     y += Math.round(H * 0.02);
   }
 
-  // Series number
   ctx.fillStyle = '#786450';
-  ctx.font = Math.round(W * 0.03) + 'px "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif';
+  ctx.font = Math.round(W * 0.03) + 'px "Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'bottom';
   ctx.fillText(data.seriesNumber || 'E01/001', W - Math.round(W * 0.12), H - Math.round(H * 0.08));
@@ -365,7 +344,7 @@ function renderCard(canvas, scale, data, illustration) {
 }
 
 // ── AI API calls ────────────────────────────────────────────
-async function callNormalModel(idiom, baseUrl, apiKey, modelName) {
+function callNormalModel(idiom, baseUrl, apiKey, modelName) {
   var prompt =
     '你是一位中文教育内容策划师。请用简洁、适合儿童阅读的中文，生成一个成语卡片的三个部分：\n' +
     '成语：' + idiom + '\n' +
@@ -374,7 +353,7 @@ async function callNormalModel(idiom, baseUrl, apiKey, modelName) {
     '3. 家长提示：一条教育建议。\n' +
     '请以 JSON 格式返回 {"explanation":..., "story":..., "tip":...}';
 
-  var resp = await fetch(baseUrl.replace(/\/$/, '') + '/chat/completions', {
+  return fetch(baseUrl.replace(/\/$/, '') + '/chat/completions', {
     method: 'POST',
     headers: {
       'Authorization': 'Bearer ' + apiKey,
@@ -388,19 +367,17 @@ async function callNormalModel(idiom, baseUrl, apiKey, modelName) {
       ],
       temperature: 0.7
     })
+  }).then(function(resp) {
+    if (!resp.ok) throw new Error('API 返回 ' + resp.status);
+    return resp.json();
+  }).then(function(data) {
+    var content = (data.choices[0].message.content || '').replace(/```json|```/g, '').trim();
+    try { return JSON.parse(content); } catch (e) { return {}; }
   });
-  if (!resp.ok) throw new Error('API 返回 ' + resp.status);
-  var data = await resp.json();
-  var content = (data.choices[0].message.content || '').replace(/```json|```/g, '').trim();
-  try {
-    return JSON.parse(content);
-  } catch (e) {
-    return {};
-  }
 }
 
-async function callImageModel(idiom, baseUrl, apiKey, modelName) {
-  var resp = await fetch(baseUrl.replace(/\/$/, '') + '/images/generations', {
+function callImageModel(idiom, baseUrl, apiKey, modelName) {
+  return fetch(baseUrl.replace(/\/$/, '') + '/images/generations', {
     method: 'POST',
     headers: {
       'Authorization': 'Bearer ' + apiKey,
@@ -412,16 +389,18 @@ async function callImageModel(idiom, baseUrl, apiKey, modelName) {
       size: '1024x1024',
       response_format: 'b64_json'
     })
+  }).then(function(resp) {
+    if (!resp.ok) throw new Error('生图 API 返回 ' + resp.status);
+    return resp.json();
+  }).then(function(data) {
+    if (data.data && data.data[0] && data.data[0].b64_json) {
+      return 'data:image/png;base64,' + data.data[0].b64_json;
+    }
+    if (data.data && data.data[0] && data.data[0].url) {
+      return data.data[0].url;
+    }
+    return null;
   });
-  if (!resp.ok) throw new Error('生图 API 返回 ' + resp.status);
-  var data = await resp.json();
-  if (data.data && data.data[0] && data.data[0].b64_json) {
-    return 'data:image/png;base64,' + data.data[0].b64_json;
-  }
-  if (data.data && data.data[0] && data.data[0].url) {
-    return data.data[0].url;
-  }
-  return null;
 }
 
 function loadImage(src) {
@@ -435,18 +414,14 @@ function loadImage(src) {
 }
 
 // ── Event handling ──────────────────────────────────────────
-var form = document.getElementById('cardForm');
-var submitBtn = document.getElementById('submitBtn');
-var spinner = document.getElementById('spinner');
-var previewArea = document.getElementById('previewArea');
 var currentCardData = null;
 
 function setLoading(loading) {
-  submitBtn.disabled = loading;
-  spinner.className = loading ? 'spinner show' : 'spinner';
+  document.getElementById('submitBtn').disabled = loading;
+  document.getElementById('spinner').className = loading ? 'spinner show' : 'spinner';
 }
 
-form.addEventListener('submit', async function(e) {
+document.getElementById('cardForm').addEventListener('submit', function(e) {
   e.preventDefault();
   hideMsg();
   setLoading(true);
@@ -469,12 +444,10 @@ form.addEventListener('submit', async function(e) {
     return;
   }
 
-  // Auto pinyin
   if (!pinyin) {
     pinyin = getPinyin(idiom);
   }
 
-  // Default content
   var card = {
     idiom: idiom,
     pinyin: pinyin,
@@ -484,70 +457,69 @@ form.addEventListener('submit', async function(e) {
     seriesNumber: 'E01/' + Math.random().toString(36).slice(2, 6).toUpperCase()
   };
 
-  var aiUsed = false;
   var errorMsg = null;
 
-  // Call normal model
+  var textPromise = Promise.resolve();
   if (normalBase && normalKey) {
-    try {
-      var aiResult = await callNormalModel(idiom, normalBase, normalKey, normalModel);
+    textPromise = callNormalModel(idiom, normalBase, normalKey, normalModel).then(function(aiResult) {
       if (aiResult.explanation) card.explanation = aiResult.explanation;
       if (aiResult.story) card.story = aiResult.story;
       if (aiResult.tip) card.tip = aiResult.tip;
-      aiUsed = true;
-    } catch (err) {
+    }).catch(function(err) {
       errorMsg = '正常模型调用失败：' + err.message + '，已改用本地默认内容。';
       if (!explanation) card.explanation = idiom + '是一个富有教育意义的成语，适合用来培养观察力与表达能力。';
       if (!story) card.story = '这个成语故事可以通过生活中的小例子帮助孩子理解其含义。';
       if (!tip) card.tip = '在教学中，可以结合日常情境让孩子更好地理解' + idiom + '。';
-    }
+    });
   } else {
     if (explanation) card.explanation = explanation;
     if (story) card.story = story;
     if (tip) card.tip = tip;
   }
 
-  // Call image model
-  var illustrationImg = null;
+  var imgPromise = Promise.resolve(null);
   if (imageBase && imageKey) {
-    try {
-      var imgSrc = await callImageModel(idiom, imageBase, imageKey, imageModel);
-      if (imgSrc) {
-        illustrationImg = await loadImage(imgSrc);
-      }
-    } catch (err) {
+    imgPromise = callImageModel(idiom, imageBase, imageKey, imageModel).then(function(imgSrc) {
+      if (imgSrc) return loadImage(imgSrc);
+      return null;
+    }).catch(function(err) {
       if (!errorMsg) errorMsg = '生图模型调用失败：' + err.message;
-    }
+      return null;
+    });
   }
 
-  loadedIllustration = illustrationImg;
-  currentCardData = card;
+  Promise.all([textPromise, imgPromise]).then(function(results) {
+    var illustrationImg = results[1];
+    loadedIllustration = illustrationImg;
+    currentCardData = card;
 
-  // Render preview
-  var previewCanvas = document.createElement('canvas');
-  previewCanvas.id = 'previewCanvas';
-  renderCard(previewCanvas, 0.35, card, illustrationImg);
+    var previewCanvas = document.createElement('canvas');
+    renderCard(previewCanvas, 0.35, card, illustrationImg);
 
-  previewArea.innerHTML = '';
-  previewArea.appendChild(previewCanvas);
+    var previewArea = document.getElementById('previewArea');
+    previewArea.innerHTML = '';
+    previewArea.appendChild(previewCanvas);
 
-  var metaDiv = document.createElement('div');
-  metaDiv.className = 'card-meta';
-  metaDiv.innerHTML =
-    '<p><strong>成语：</strong>' + escapeHtml(card.idiom) + '</p>' +
-    '<p><strong>拼音：</strong>' + escapeHtml(card.pinyin) + '</p>' +
-    '<p><strong>解释：</strong>' + escapeHtml(card.explanation) + '</p>';
-  previewArea.appendChild(metaDiv);
+    var metaDiv = document.createElement('div');
+    metaDiv.className = 'card-meta';
+    metaDiv.innerHTML =
+      '<p><strong>成语：</strong>' + escapeHtml(card.idiom) + '</p>' +
+      '<p><strong>拼音：</strong>' + escapeHtml(card.pinyin) + '</p>' +
+      '<p><strong>解释：</strong>' + escapeHtml(card.explanation) + '</p>';
+    previewArea.appendChild(metaDiv);
 
-  var downloadBtn = document.createElement('button');
-  downloadBtn.textContent = '下载卡片图片';
-  downloadBtn.className = 'download-btn';
-  downloadBtn.onclick = downloadCard;
-  previewArea.appendChild(downloadBtn);
+    var downloadBtn = document.createElement('button');
+    downloadBtn.textContent = '下载卡片图片';
+    downloadBtn.className = 'download-btn';
+    downloadBtn.onclick = downloadCard;
+    previewArea.appendChild(downloadBtn);
 
-  if (errorMsg) showMsg(errorMsg, 'info');
-
-  setLoading(false);
+    if (errorMsg) showMsg(errorMsg, 'info');
+    setLoading(false);
+  }).catch(function(err) {
+    showMsg('生成失败：' + err.message, 'error');
+    setLoading(false);
+  });
 });
 
 function downloadCard() {
